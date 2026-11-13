@@ -1,0 +1,58 @@
+name: JD Sign
+
+on:
+  # 每天北京时间 07:15 触发（cron 是 UTC，07:15 UTC+8 = 前一天 23:15 UTC）
+  # 避开凌晨 0 点的全网薅羊毛高峰，降低 Cookie 被风控概率
+  schedule:
+    - cron: '15 23 * * *'
+  # 允许手动触发，方便调试
+  workflow_dispatch:
+  # 仓库被点亮 Star 时触发（方便首次测试）
+  watch:
+    types: [started]
+
+# 配置环境变量（从 GitHub Secrets 读取，不要写死在代码里）
+env:
+  JD_COOKIE: ${{ secrets.JD_COOKIE }}
+  JD_COOKIE2: ${{ secrets.JD_COOKIE2 }}
+  JD_COOKIE3: ${{ secrets.JD_COOKIE3 }}
+  PUSH_KEY: ${{ secrets.PUSH_KEY }}
+  BARK_KEY: ${{ secrets.BARK_KEY }}
+  # 风控优化：请求间随机延迟（毫秒），默认 5-15 秒
+  JD_DELAY: '5000-15000'
+  # 风控优化：禁用的接口代号（逗号分隔）。留空则全量签到。
+  # 实测：京豆主签到(JDBean)/转盘(JDTurn)/现金红包(JDCash) 已被京东新签名拦截报错，
+  # 禁用可避免反复 403/参数异常触发风控；保留钢镚(JRSteel)/魔方(JDCube) 等有真实响应的接口。
+  JD_DISABLE: 'JDBean,JDTurn,JDCash'
+  # 风控优化关键：请求 UA 必须与抓取 Cookie 的浏览器 UA 一致！
+  # 你从 Mac Firefox 抓的 Cookie，这里就用 Firefox 桌面 UA。可设为 Secret JD_UA 覆盖。
+  JD_UA: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0'
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install request dependency
+        # NobyDa 脚本内部依赖 request 模块
+        run: npm install request
+
+      - name: Run JD sign script
+        run: node jd_sign.js
+
+      - name: Upload result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sign-result
+          path: |
+            ./result.txt
+            ./error.txt
+          if-no-files-found: ignore

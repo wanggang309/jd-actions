@@ -16,7 +16,7 @@ const PUSH_KEY = (process.env.PUSH_KEY || '').trim()
 const BARK_KEY = (process.env.BARK_KEY || '').trim()
 const SCRIPT_URL =
   process.env.JD_SCRIPT_URL ||
-  'https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js'
+  'https://raw.githubusercontent.com/wanggang309/jd-actions/refs/heads/main/JD_DailyBonus.js'
 
 // ---- 风控优化参数 ----
 // 请求间随机延迟区间（单位毫秒），模拟真人；默认 5-15 秒随机
